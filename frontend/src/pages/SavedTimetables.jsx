@@ -4,20 +4,21 @@ import { Eye, Trash2, Archive } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import Table from '../components/Common/Table';
+import ConfirmModal from '../components/Common/ConfirmModal';
 import { getTimetables, deleteTimetable, updateStatus } from '../api/timetable';
 
 export default function SavedTimetables() {
   const [timetables, setTimetables] = useState([]);
   const [loading, setLoading]       = useState(true);
+  const [confirmItem, setConfirmItem] = useState(null);
   const navigate = useNavigate();
 
   function load() { getTimetables().then(r => setTimetables(r.data)).finally(() => setLoading(false)); }
   useEffect(load, []);
 
-  async function handleDelete(tt) {
-    if (!window.confirm(`Delete "${tt.name}"?`)) return;
+  async function doDelete(tt) {
     try { await deleteTimetable(tt.id); toast.success('Deleted'); load(); }
-    catch { toast.error('Delete failed'); }
+    catch (err) { toast.error(err.response?.data?.error || 'Delete failed'); }
   }
 
   async function handleArchive(tt) {
@@ -40,7 +41,7 @@ export default function SavedTimetables() {
         {r.status !== 'archived' && (
           <button className="btn btn-ghost btn-sm" onClick={() => handleArchive(r)}><Archive size={13} /></button>
         )}
-        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(r)}><Trash2 size={13} /></button>
+        <button className="btn btn-danger btn-sm" onClick={() => setConfirmItem(r)}><Trash2 size={13} /></button>
       </div>
     )},
   ];
@@ -55,6 +56,13 @@ export default function SavedTimetables() {
       <div className="card" style={{ padding: 0 }}>
         <Table columns={columns} data={timetables} emptyMessage="No timetables yet. Generate one!" />
       </div>
+      {confirmItem && (
+        <ConfirmModal
+          message={`Delete "${confirmItem.name}"?`}
+          onConfirm={() => doDelete(confirmItem)}
+          onClose={() => setConfirmItem(null)}
+        />
+      )}
     </div>
   );
 }

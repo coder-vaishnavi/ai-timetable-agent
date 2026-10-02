@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Table from '../components/Common/Table';
 import Modal from '../components/Common/Modal';
+import ConfirmModal from '../components/Common/ConfirmModal';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import { getSubjects, createSubject, updateSubject, deleteSubject } from '../api/subjects';
 
@@ -18,6 +19,7 @@ export default function Subjects() {
   const [form, setForm]         = useState(EMPTY);
   const [editId, setEditId]     = useState(null);
   const [saving, setSaving]     = useState(false);
+  const [confirmItem, setConfirmItem] = useState(null);
 
   function load() {
     getSubjects().then(r => setSubjects(r.data)).finally(() => setLoading(false));
@@ -46,10 +48,9 @@ export default function Subjects() {
     finally { setSaving(false); }
   }
 
-  async function handleDelete(s) {
-    if (!window.confirm(`Delete ${s.name}?`)) return;
+  async function doDelete(s) {
     try { await deleteSubject(s.id); toast.success('Deleted'); load(); }
-    catch { toast.error('Delete failed'); }
+    catch (err) { toast.error(err.response?.data?.error || 'Delete failed'); }
   }
 
   const columns = [
@@ -62,7 +63,7 @@ export default function Subjects() {
     { key: 'actions', label: '', render: r => (
       <div style={{ display: 'flex', gap: 6 }}>
         <button className="btn btn-ghost btn-sm" onClick={() => openEdit(r)}><Pencil size={13} /></button>
-        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(r)}><Trash2 size={13} /></button>
+        <button className="btn btn-danger btn-sm" onClick={() => setConfirmItem(r)}><Trash2 size={13} /></button>
       </div>
     )},
   ];
@@ -83,6 +84,13 @@ export default function Subjects() {
         <Table columns={columns} data={subjects} emptyMessage="No subjects yet." />
       </div>
 
+      {confirmItem && (
+        <ConfirmModal
+          message={`Delete ${confirmItem.name}?`}
+          onConfirm={() => doDelete(confirmItem)}
+          onClose={() => setConfirmItem(null)}
+        />
+      )}
       {modal === 'form' && (
         <Modal title={editId ? 'Edit Subject' : 'Add Subject'} onClose={() => setModal(null)}
           footer={<>

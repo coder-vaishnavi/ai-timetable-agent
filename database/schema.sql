@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS timetable (
     conflicts_count    INT DEFAULT 0,
     created_by         INT,
     created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (class_id)    REFERENCES classes(id),
+    FOREIGN KEY (class_id)    REFERENCES classes(id)   ON DELETE CASCADE,
     FOREIGN KEY (created_by)  REFERENCES users(id)
 );
 
@@ -149,10 +149,10 @@ CREATE TABLE IF NOT EXISTS timetable_entries (
     teacher_id     INT NOT NULL,
     classroom_id   INT NOT NULL,
     FOREIGN KEY (timetable_id)  REFERENCES timetable(id)   ON DELETE CASCADE,
-    FOREIGN KEY (division_id)   REFERENCES divisions(id),
-    FOREIGN KEY (subject_id)    REFERENCES subjects(id),
-    FOREIGN KEY (teacher_id)    REFERENCES teachers(id),
-    FOREIGN KEY (classroom_id)  REFERENCES classrooms(id),
+    FOREIGN KEY (division_id)   REFERENCES divisions(id)   ON DELETE CASCADE,
+    FOREIGN KEY (subject_id)    REFERENCES subjects(id)    ON DELETE CASCADE,
+    FOREIGN KEY (teacher_id)    REFERENCES teachers(id)    ON DELETE CASCADE,
+    FOREIGN KEY (classroom_id)  REFERENCES classrooms(id)  ON DELETE CASCADE,
     UNIQUE KEY uq_entry (timetable_id, division_id, day, slot)
 );
 

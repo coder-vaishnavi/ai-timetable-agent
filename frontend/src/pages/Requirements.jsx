@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import Modal from '../components/Common/Modal';
+import ConfirmModal from '../components/Common/ConfirmModal';
 import { getDivisions } from '../api/divisions';
 import { getSubjects } from '../api/subjects';
 import { getTeachers } from '../api/teachers';
@@ -18,6 +19,7 @@ export default function Requirements() {
   const [modal, setModal]         = useState(null);
   const [form, setForm]           = useState({ subject_id: '', teacher_id: '', sessions_per_week: 3, is_lab: false });
   const [saving, setSaving]       = useState(false);
+  const [confirmItem, setConfirmItem] = useState(null);
 
   useEffect(() => {
     Promise.all([getDivisions(), getSubjects(), getTeachers()])
@@ -44,14 +46,13 @@ export default function Requirements() {
     finally { setSaving(false); }
   }
 
-  async function handleDelete(req) {
-    if (!window.confirm(`Remove ${req.subject_name}?`)) return;
+  async function doDelete(req) {
     try {
       await deleteRequirement(selDiv.id, req.subject_id);
       toast.success('Removed');
       const res = await getRequirements(selDiv.id);
       setReqs(res.data);
-    } catch { toast.error('Delete failed'); }
+    } catch (err) { toast.error(err.response?.data?.error || 'Delete failed'); }
   }
 
   if (loading) return <LoadingSpinner full />;
@@ -103,7 +104,7 @@ export default function Requirements() {
                       </td>
                       <td>{r.teacher_name}</td>
                       <td>{r.sessions_per_week}×/week</td>
-                      <td><button className="btn btn-danger btn-sm" onClick={() => handleDelete(r)}><Trash2 size={13} /></button></td>
+                      <td><button className="btn btn-danger btn-sm" onClick={() => setConfirmItem(r)}><Trash2 size={13} /></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -117,6 +118,13 @@ export default function Requirements() {
         )}
       </div>
 
+      {confirmItem && (
+        <ConfirmModal
+          message={`Remove ${confirmItem.subject_name} from requirements?`}
+          onConfirm={() => doDelete(confirmItem)}
+          onClose={() => setConfirmItem(null)}
+        />
+      )}
       {modal === 'form' && (
         <Modal title="Add Requirement" onClose={() => setModal(null)}
           footer={<>

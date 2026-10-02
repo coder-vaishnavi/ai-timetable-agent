@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Table from '../components/Common/Table';
 import Modal from '../components/Common/Modal';
+import ConfirmModal from '../components/Common/ConfirmModal';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import { getTeachers, createTeacher, updateTeacher, deleteTeacher } from '../api/teachers';
 
@@ -11,10 +12,11 @@ const EMPTY = { name: '', email: '', department: '', max_hours: 20 };
 export default function Teachers() {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading]   = useState(true);
-  const [modal, setModal]       = useState(null); // null | 'add' | 'edit'
+  const [modal, setModal]       = useState(null);
   const [form, setForm]         = useState(EMPTY);
   const [saving, setSaving]     = useState(false);
   const [editId, setEditId]     = useState(null);
+  const [confirmItem, setConfirmItem] = useState(null);
 
   function load() {
     getTeachers().then(r => setTeachers(r.data)).finally(() => setLoading(false));
@@ -42,13 +44,14 @@ export default function Teachers() {
     } finally { setSaving(false); }
   }
 
-  async function handleDelete(t) {
-    if (!window.confirm(`Delete ${t.name}?`)) return;
+  async function doDelete(t) {
     try {
       await deleteTeacher(t.id);
       toast.success('Teacher deleted');
       load();
-    } catch (err) { toast.error('Delete failed'); }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Delete failed');
+    }
   }
 
   const columns = [
@@ -59,7 +62,7 @@ export default function Teachers() {
     { key: 'actions',    label: '', render: r => (
       <div style={{ display: 'flex', gap: 6 }}>
         <button className="btn btn-ghost btn-sm" onClick={() => openEdit(r)}><Pencil size={13} /></button>
-        <button className="btn btn-danger btn-sm"  onClick={() => handleDelete(r)}><Trash2 size={13} /></button>
+        <button className="btn btn-danger btn-sm" onClick={() => setConfirmItem(r)}><Trash2 size={13} /></button>
       </div>
     )},
   ];
@@ -80,6 +83,13 @@ export default function Teachers() {
         <Table columns={columns} data={teachers} emptyMessage="No teachers yet. Add one to get started." />
       </div>
 
+      {confirmItem && (
+        <ConfirmModal
+          message={`Delete ${confirmItem.name}?`}
+          onConfirm={() => doDelete(confirmItem)}
+          onClose={() => setConfirmItem(null)}
+        />
+      )}
       {modal === 'form' && (
         <Modal
           title={editId ? 'Edit Teacher' : 'Add Teacher'}

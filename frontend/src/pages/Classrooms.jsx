@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Table from '../components/Common/Table';
 import Modal from '../components/Common/Modal';
+import ConfirmModal from '../components/Common/ConfirmModal';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import { getClassrooms, createClassroom, updateClassroom, deleteClassroom } from '../api/classrooms';
 
@@ -15,6 +16,7 @@ export default function Classrooms() {
   const [form, setForm]             = useState(EMPTY);
   const [editId, setEditId]         = useState(null);
   const [saving, setSaving]         = useState(false);
+  const [confirmItem, setConfirmItem] = useState(null);
 
   function load() { getClassrooms().then(r => setClassrooms(r.data)).finally(() => setLoading(false)); }
   useEffect(load, []);
@@ -33,10 +35,9 @@ export default function Classrooms() {
     finally { setSaving(false); }
   }
 
-  async function handleDelete(c) {
-    if (!window.confirm(`Delete ${c.name}?`)) return;
+  async function doDelete(c) {
     try { await deleteClassroom(c.id); toast.success('Deleted'); load(); }
-    catch { toast.error('Delete failed'); }
+    catch (err) { toast.error(err.response?.data?.error || 'Delete failed'); }
   }
 
   const columns = [
@@ -46,7 +47,7 @@ export default function Classrooms() {
     { key: 'actions',  label: '', render: r => (
       <div style={{ display: 'flex', gap: 6 }}>
         <button className="btn btn-ghost btn-sm" onClick={() => openEdit(r)}><Pencil size={13} /></button>
-        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(r)}><Trash2 size={13} /></button>
+        <button className="btn btn-danger btn-sm" onClick={() => setConfirmItem(r)}><Trash2 size={13} /></button>
       </div>
     )},
   ];
@@ -63,6 +64,13 @@ export default function Classrooms() {
         <Table columns={columns} data={classrooms} />
       </div>
 
+      {confirmItem && (
+        <ConfirmModal
+          message={`Delete ${confirmItem.name}?`}
+          onConfirm={() => doDelete(confirmItem)}
+          onClose={() => setConfirmItem(null)}
+        />
+      )}
       {modal === 'form' && (
         <Modal title={editId ? 'Edit Classroom' : 'Add Classroom'} onClose={() => setModal(null)}
           footer={<>

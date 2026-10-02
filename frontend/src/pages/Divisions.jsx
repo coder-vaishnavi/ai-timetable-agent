@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Table from '../components/Common/Table';
 import Modal from '../components/Common/Modal';
+import ConfirmModal from '../components/Common/ConfirmModal';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import { getClasses, getDivisions, createDivision, deleteDivision } from '../api/divisions';
 
@@ -13,6 +14,7 @@ export default function Divisions() {
   const [modal, setModal]         = useState(null);
   const [form, setForm]           = useState({ class_id: '', name: '', strength: 60 });
   const [saving, setSaving]       = useState(false);
+  const [confirmItem, setConfirmItem] = useState(null);
 
   function load() {
     Promise.all([getClasses(), getDivisions()])
@@ -32,10 +34,9 @@ export default function Divisions() {
     finally { setSaving(false); }
   }
 
-  async function handleDelete(d) {
-    if (!window.confirm(`Delete Division ${d.name}?`)) return;
+  async function doDelete(d) {
     try { await deleteDivision(d.id); toast.success('Deleted'); load(); }
-    catch { toast.error('Delete failed'); }
+    catch (err) { toast.error(err.response?.data?.error || 'Delete failed'); }
   }
 
   const columns = [
@@ -43,7 +44,7 @@ export default function Divisions() {
     { key: 'name',       label: 'Division' },
     { key: 'strength',   label: 'Strength' },
     { key: 'actions', label: '', render: r => (
-      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(r)}><Trash2 size={13} /></button>
+      <button className="btn btn-danger btn-sm" onClick={() => setConfirmItem(r)}><Trash2 size={13} /></button>
     )},
   ];
 
@@ -61,6 +62,13 @@ export default function Divisions() {
         <Table columns={columns} data={divisions} emptyMessage="No divisions yet." />
       </div>
 
+      {confirmItem && (
+        <ConfirmModal
+          message={`Delete Division ${confirmItem.name}?`}
+          onConfirm={() => doDelete(confirmItem)}
+          onClose={() => setConfirmItem(null)}
+        />
+      )}
       {modal === 'form' && (
         <Modal title="Add Division" onClose={() => setModal(null)}
           footer={<>
